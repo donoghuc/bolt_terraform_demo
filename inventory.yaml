@@ -1,0 +1,17 @@
+
+groups:
+  - name: terraform_vms
+    targets:
+      - _plugin: terraform
+        dir: './terraform'
+        resource_type: 'google_compute_instance.terraform_instance'
+        target_mapping:
+          name: name
+          uri: network_interface.0.network_ip
+
+config:
+  ssh:
+    run-as: root
+    host-key-check: false
+    user: cas.donoghue
+    private-key: ~/.ssh/id_rsa-gcloud
