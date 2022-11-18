@@ -12,9 +12,9 @@ This gist is a draft for re-vamping [the bolt and terraform blog](https://puppet
 
 [Bolt](https://puppet.com/docs/bolt/latest/bolt.html) is an open source remote task runner that can run commands, scripts, and puppet code across your infrastructure with a few keystrokes. It's available with RBAC and more enterprise features in Puppet Enterprise. Bolt combines the declarative Puppet language model with familiar and convenient imperative code, making it easy to learn and effective for both one-off tasks and long-term configuration management.
 
-I want to demonstrate how powerful using these tools together is, and how they each enable you quickly get the cloud resources you need and provision them with minimal setup and code. We'll orchestrate the provisioning of a [Google Compute Engine VM instance](https://cloud.google.com/compute/docs/instances/) instance with Terraform and Bolt. 
+I want to demonstrate how powerful using these tools together is, and how they each enable you to quickly get the cloud resources you need and provision them with minimal setup and code. We'll orchestrate the provisioning of a [Google Compute Engine VM instance](https://cloud.google.com/compute/docs/instances/) instance with Terraform and Bolt. 
 
-Note: If you want to follow along or see a more complete example all my code is available on github.
+Note: If you want to follow along or see a more complete example all my code is available on [github](https://github.com/donoghuc/bolt_terraform_demo).
 
 ### Bolt project setup
 
@@ -179,7 +179,7 @@ Now we are ready to use bolt to apply the terraform manifest using the `terrafor
 
 Once we have provisioned new VMs we can use the terraform plugin to dynamically create bolt targets. The terraform module shipped with bolt contains [reference plugins](https://puppet.com/docs/bolt/latest/supported_plugins.html#reference-plugins) that support looking up information for terraform state to construct targets. 
 
-In the terraform directory a new `terraform.tfstate` file has been created (as a result of running the `terraform::apply` plan). Some relevant snippets from the (rather largee) `terraform.tfstate` file:
+In the terraform directory a new `terraform.tfstate` file has been created (as a result of running the `terraform::apply` plan). Some relevant snippets from the (rather large) `terraform.tfstate` file:
 ```
       "mode": "managed",
       "type": "google_compute_instance",
@@ -199,7 +199,7 @@ The relevant sections under the `instances` key are:
 
 Bolt manages target information in an `inventory.yaml` file. [inventory reference](https://puppet.com/docs/bolt/latest/inventory_files.html)
 
-In order to connect to the newly provisioned nodes we organize them into a `group` called `terraform_vms`. For resolving the targets in this group we use the `terraform` reference plugin. The `dir` parameter is the path to the `terraform` directory where our `terraform.tfstate` is located (or if you are managing a remote tfstate, the information for collecting current state). The `resource_type` shows how we index in to the relevant section of the `terraform.tfstate` (snippets above). In this case we are interested in the `terraform_instance` of the `google_compute_instance` resource. Within this `terraform_instance` resource there are several (by default 2) instances. We can map these to targets with the `target_mapping` key. We will set the target `name` to the name of the particular instancce (for example, from the `tfstate` file snippet above `name` will resolve to  `terraform-instance-0`), and the `host` to the `network_ip` (note how indexing syntax works here, the `network_interface` key points to a list where we take the first value `0` and look up the `network_ip` which will resolve to `10.253.20.66` based on the `tfstate` snippet).
+In order to connect to the newly provisioned nodes we organize them into a `group` called `terraform_vms`. For resolving the targets in this group we use the `terraform` reference plugin. The `dir` parameter is the path to the `terraform` directory where our `terraform.tfstate` is located (or if you are managing a remote tfstate, the information for collecting current state). The `resource_type` shows how we index into the relevant section of the `terraform.tfstate` (snippets above). In this case we are interested in the `terraform_instance` of the `google_compute_instance` resource. Within this `terraform_instance` resource there are several (by default 2) instances. We can map these to targets with the `target_mapping` key. We will set the target `name` to the name of the particular instance (for example, from the `tfstate` file snippet above `name` will resolve to  `terraform-instance-0`), and the `host` to the `network_ip` (note how indexing syntax works here, the `network_interface` key points to a list where we take the first value `0` and look up the `network_ip` which will resolve to `10.253.20.66` based on the `tfstate` snippet).
 
 We set the ssh transport config via the `config` key (this will apply to any group in the inventory), in this case I set the username and private key as well as some other information about the ssh session (dont require host key verification and run any commands as the `root` user). 
 
@@ -317,7 +317,7 @@ bolt plan run terraform::destroy dir=terraform
 
 ## Orchestration of provisioning
 
-One of the most powerful bolt features is the ability to run plans. Sometimes you want to provision new targets and configure them within the contex of a single plan. In order to do this we can leverage the reference plugin to dynamically add targets to the inventory in the context of a plan run. This can be achieved with the [resolve_references plan function](https://puppet.com/docs/bolt/latest/plan_functions.html#resolve-references). We write a plan called `bolt_terraform_demo::dynamic_inventory_example` which will use terraform to provision some new VMs, add those newly provisioned targets to the inventory, wait for them to come online, run a command on them and finally destroy them. 
+One of the most powerful bolt features is the ability to run plans. Sometimes you want to provision new targets and configure them within the context of a single plan. In order to do this we can leverage the reference plugin to dynamically add targets to the inventory in the context of a plan run. This can be achieved with the [resolve_references plan function](https://puppet.com/docs/bolt/latest/plan_functions.html#resolve-references). We write a plan called `bolt_terraform_demo::dynamic_inventory_example` which will use terraform to provision some new VMs, add those newly provisioned targets to the inventory, wait for them to come online, run a command on them and finally destroy them. 
 
 ```
 plan bolt_terraform_demo::dynamic_inventory_example(){
@@ -345,7 +345,7 @@ plan bolt_terraform_demo::dynamic_inventory_example(){
   $command_results = run_command('hostname -f', $terraform_vm_targets)
   out::message($command_results)
 
-  # Destroy the newly provisoned hosts
+  # Destroy the newly provisioned hosts
   run_plan('terraform::destroy', dir => 'terraform')
 }
 ```

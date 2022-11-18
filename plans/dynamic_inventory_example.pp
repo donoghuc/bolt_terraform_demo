@@ -23,6 +23,6 @@ plan bolt_terraform_demo::dynamic_inventory_example(){
   $command_results = run_command('hostname -f', $terraform_vm_targets)
   out::message($command_results)
 
-  # Destroy the newly provisoned hosts
+  # Destroy the newly provisioned hosts
   run_plan('terraform::destroy', dir => 'terraform')
 }
